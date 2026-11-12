@@ -1,7 +1,8 @@
 import { OBSTACLES, characterAt } from "../content/characters";
 import type { Action } from "../game/types";
 import type { Screen } from "../terminal/screen";
-import { BaseScene, type RunResult, type Transition } from "./scene";
+import { BaseScene } from "./base-scene";
+import type { RunResult, Transition } from "./scene";
 import { ACCENT, DANGER, DIM, PANEL, TEXT, drawBox } from "./ui";
 
 const BOX_W = 52;

@@ -13,7 +13,8 @@ import {
 import type { Action, GameState } from '../game/types';
 import { createGame, distanceOf, isJumping, isVillainActive, scoreOf, update } from '../game/update';
 import { textWidth, type Screen } from '../terminal/screen';
-import { BaseScene, type Transition } from './scene';
+import { BaseScene } from './base-scene';
+import type { Transition } from './scene';
 import { BG, DANGER, DIM, GROUND, HUD_BG, LANE_BG, TEXT, drawBox } from './ui';
 
 /** Primeira linha da faixa da pista 0 (linha 0 = HUD, linha 1 = status do vilão). */

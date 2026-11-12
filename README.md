@@ -60,30 +60,58 @@ Funcionam bem os terminais com truecolor e tela alternativa: **Windows Terminal*
 
 Evite o console antigo do Windows (`conhost`, aberto direto pelo `cmd.exe` em versões antigas) e o Terminal.app do macOS, que não têm truecolor completo: as cores saem aproximadas.
 
-## Estrutura
+## Estrutura de pastas
+
+| Pasta | Responsabilidade |
+|-------|------------------|
+| `src/` | Ponto de entrada (`main.ts`): game loop, troca de cenas e ciclo de vida do terminal. |
+| `src/terminal/` | Tudo o que fala com o terminal: renderização e leitura do teclado. |
+| `src/game/` | Regras do jogo, puras e testáveis, sem nenhum I/O. |
+| `src/content/` | Dados: personagens, coins, vilões, obstáculos e sprites. |
+| `src/scenes/` | Telas do jogo (menu, partida, game over) e a base comum delas. |
+| `tests/` | Testes automatizados com `node:test`. |
 
 ```
 src/main.ts                 bootstrap, troca de cenas, game loop, ciclo de vida do terminal
-src/terminal/screen.ts      buffer de células, diff por frame, entrada e saída do modo raw
-src/terminal/input.ts       stdin raw → fila de ações abstratas
+src/terminal/screen.ts      classe Screen: buffer de células e diff por frame; entrada e saída do modo raw
+src/terminal/input.ts       classe InputQueue: stdin raw → fila de ações abstratas
 src/game/types.ts           tipos do estado
 src/game/config.ts          constantes de jogo (velocidade, tamanhos, tempos)
 src/game/update.ts          update(state, actions, dtMs) puro
-src/game/spawner.ts         RNG semeável + geração de padrões
+src/game/rng.ts             classe Rng: gerador aleatório semeável (mulberry32)
+src/game/spawner.ts         geração de padrões de coins e obstáculos
 src/game/collision.ts       AABB por pista
 src/content/characters.ts   personagens, coins, vilões e obstáculos
-src/scenes/scene.ts         interface Scene + classe abstrata BaseScene
-src/scenes/menu.ts, play.ts, gameover.ts
+src/scenes/scene.ts         interface Scene + tipos de transição
+src/scenes/base-scene.ts    classe abstrata BaseScene
+src/scenes/menu.ts          classe MenuScene
+src/scenes/play.ts          classe PlayScene
+src/scenes/gameover.ts      classe GameOverScene
 src/scenes/ui.ts            paleta e helpers de desenho
 tests/                      testes de update, colisão, spawner, sprites e input
 ```
 
+Cada classe fica no seu próprio arquivo.
+
 ### Arquitetura (POO)
 
-- `Scene` (interface) é o contrato que o `main.ts` usa: `tick(actions, dtMs)` e `render(screen)`.
-- `BaseScene` (classe abstrata) implementa `Scene` com o padrão *template method*: conta o tempo da cena e limpa o fundo, e delega o resto para os métodos abstratos `onTick` e `draw`.
+- `Scene` (interface, em `scene.ts`) é o contrato que o `main.ts` usa: `tick(actions, dtMs)` e `render(screen)`.
+- `BaseScene` (classe abstrata, em `base-scene.ts`) implementa `Scene` com o padrão *template method*: conta o tempo da cena e limpa o fundo, e delega o resto para os métodos abstratos `onTick` e `draw`.
 - `MenuScene`, `PlayScene` e `GameOverScene` estendem `BaseScene`.
 - A regra do jogo (`update`, `collision`, `spawner`) continua funcional e pura. Ela não importa nada de `src/terminal/` nem usa `process`, `Date.now()` ou `Math.random()`. Tempo chega como `dtMs` e a aleatoriedade vem de um RNG semeado guardado no estado.
+
+## Aprendizados
+
+- **Interface x classe abstrata:** a interface `Scene` diz *o que* uma cena precisa ter. A classe abstrata `BaseScene` já entrega *parte do como* (contar o tempo, limpar a tela) e obriga cada cena a implementar só o que é dela (`onTick` e `draw`). Isso é o padrão *template method*.
+- **Herança e polimorfismo:** o `main.ts` guarda uma variável do tipo `Scene` e chama `tick` e `render` sem saber se é o menu, a partida ou o game over.
+- **Encapsulamento:** `Screen` esconde os buffers (`private`) e expõe só métodos de desenho. `InputQueue` esconde a fila e só deixa consumir com `drain()`.
+- **Separar regra de I/O:** a regra do jogo (`update`, `collision`, `spawner`) não sabe que existe terminal. Por isso dá para testar tudo com `node:test`, sem abrir o jogo.
+- **Aleatoriedade com seed:** com um RNG semeado, a mesma seed gera sempre o mesmo mundo. Isso torna o spawner testável e reproduzível.
+- **TypeScript strict:** com `strict: true`, o compilador obriga a tratar `undefined` e `null` e a tipar tudo, sem `any` implícito. Vários erros aparecem antes de rodar.
+- **Terminal por dentro:** escape codes ANSI, cor truecolor, tela alternativa e modo raw. E a importância de restaurar o terminal em qualquer saída (Q, Ctrl+C, erro).
+- **Renderização sem flicker:** em vez de limpar a tela a cada frame, o jogo compara com o frame anterior e reescreve só as células que mudaram, num único `write`.
+- **Game loop de timestep fixo:** o jogo avança sempre em passos de 1/30 s, independente da velocidade do computador. Isso deixa a física previsível.
+- **Colisão AABB:** dois retângulos colidem quando se sobrepõem nos dois eixos. Aqui, só se estiverem na mesma pista.
 
 ## Decisões
 

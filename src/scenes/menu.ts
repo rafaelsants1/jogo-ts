@@ -1,7 +1,8 @@
 import { CHARACTERS } from '../content/characters';
 import type { Action } from '../game/types';
 import { textWidth, type Screen } from '../terminal/screen';
-import { BaseScene, type Transition } from './scene';
+import { BaseScene } from './base-scene';
+import type { Transition } from './scene';
 import { ACCENT, BG, DIM, PANEL, TEXT, drawBox } from './ui';
 
 const TITLE = 'C O R R E ,   B R A S Í L I A !';

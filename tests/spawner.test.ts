@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { CHUNK_LEN, COIN_SPACING, HIGH_W } from '../src/game/config';
-import { Rng, spawnChunk, type Chunk } from '../src/game/spawner';
+import { Rng } from '../src/game/rng';
+import { spawnChunk, type Chunk } from '../src/game/spawner';
 
 function generate(seed: number, count: number): Chunk[] {
   const chunks: Chunk[] = [];
